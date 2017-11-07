@@ -32,7 +32,7 @@ ESP8266WebServer server(80);
 // # WifiManager:
 // # Config data, initial values, will be overwritten if they are different in config.json
 // #########################################################
-char mqtt_server[40] = "m.concept-labs.com";
+char mqtt_server[40] = "mqttserver";
 char mqtt_port[6] = "1883";
 char mqtt_topic[34] = "garage_door";
 
