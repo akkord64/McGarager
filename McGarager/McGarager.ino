@@ -12,7 +12,7 @@
 #include <ArduinoOTA.h>
 
 
-const char DEVICE_ID[40] = "McGarager";
+const char DEVICE_ID[40] = "iGarage";
 const char TOPIC_STATUS[40] = "garage_door/status";
 const char TOPIC_CMD[40] = "garage_door/cmd";
 
@@ -24,13 +24,15 @@ SENSOR_STATE sensor_state = SENSOR_NONE;
 long stateChangeTimestamp = 0;
 
 
+//WebScr Stuffs
+ESP8266WebServer server(80);
 
 
 // #########################################################
 // # WifiManager:
 // # Config data, initial values, will be overwritten if they are different in config.json
 // #########################################################
-char mqtt_server[40] = "raspberrypi2";
+char mqtt_server[40] = "m.concept-labs.com";
 char mqtt_port[6] = "1883";
 char mqtt_topic[34] = "garage_door";
 
@@ -66,8 +68,17 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-
-
+// Web Server Stuff
+void handle_status() {
+  //getStatus(}
+  server.send(200, "text/plain", getStatus());
+}
+void handle_cmd() {
+  // Toggle Relay
+  pulseRelay();
+  server.send(200, "text/plain", String("Button Triggered via HTTP"));
+  client.publish(TOPIC_STATUS, "Button Triggered via HTTP");
+}
 void setup() {
   // Init serial
   Serial.begin(115200);
@@ -78,10 +89,18 @@ void setup() {
   pinMode(CONFIGAP_TRIGGER_PIN, INPUT);
   //pinMode(BUILTIN_LED, OUTPUT);
   pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, HIGH);
   pinMode(OPENED_SENSOR_PIN, INPUT_PULLUP);
   pinMode(CLOSED_SENSOR_PIN, INPUT_PULLUP);
   
+// Web Svr Stuff
 
+server.on("/", handle_status);
+server.on("/cmd", handle_cmd);
+  // Start the server 
+  server.begin();
+  Serial.println("HTTP server started");
+//
   // #########################################################
   // # Init SPIFFS and read config
   // #########################################################
@@ -143,7 +162,7 @@ void setup() {
   // Reset settings - for testing
   //wifiManager.resetSettings();
 
-  if (!wifiManager.autoConnect("McGaragerAP")) {
+  if (!wifiManager.autoConnect("iGaragerAP")) {
     Serial.println("failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
@@ -219,9 +238,9 @@ void setup() {
 // # Relay: Pulse relay
 // #########################################################
 void pulseRelay() {
-  digitalWrite(RELAY_PIN, HIGH);
-  delay(200);
   digitalWrite(RELAY_PIN, LOW);
+  delay(200);
+  digitalWrite(RELAY_PIN, HIGH);
 }
 
 
@@ -286,6 +305,7 @@ void publishStatus() {
   
   client.publish(TOPIC_STATUS, message_buff);
 }
+
 
 
 // #########################################################
@@ -415,6 +435,6 @@ void loop() {
   }
 
   statemachine();
-
+server.handleClient();
   ArduinoOTA.handle();
 }
